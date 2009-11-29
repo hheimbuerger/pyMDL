@@ -91,8 +91,10 @@ class PyMDL:
 		print 'libs: %s' % ', '.join(libs)
 		print 'symbols: %s' % ', '.join(symbols)
 		print 'externals: %s' % ', '.join(externals)
-		
+		print 'size: %ix%i' % (binary_surface_info['x'], binary_surface_info['y'])
 		print 'bitCount: %i' % binary_surface_info['bitCount']
+		print 'redMask: %i' % binary_surface_info['redMask']
+		print 'greenMask: %i' % binary_surface_info['greenMask']
 		print 'blueMask: %i' % binary_surface_info['blueMask']
 		print 'len(data): %i' % len(data)
 		
