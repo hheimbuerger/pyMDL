@@ -1,11 +1,11 @@
 import struct
-import Image
-import sys
+import Image, ImageFile
+import sys, os
 
-class NotMDLException(Exception):
+class NotMDLException(SyntaxError):
   pass
 
-class NotImplementedException(Exception):
+class NotImplementedException(SyntaxError):
   pass
 
 class FileReader:
@@ -37,18 +37,16 @@ class FileReader:
 		return result
 	
 
+#http://www.pythonware.com/library/pil/handbook/decoder.htm
+class MDLImageFile(ImageFile.ImageFile):
 
-class PyMDL:
+  format = "MDL"
+  format_description = "Allegiance™ MDL version 1 image file"
+  
 	#FORMAT = "<lllllls"
 	
-	def __init__(self):
-		self.data = None
-		
-  def writeImage(self, image, filename):
-    return NotImplemented
-
-	def readImage(self, filename):
-		reader = FileReader(filename)
+	def _open(self):
+		reader = FileReader(self.fp) #TODO: confirm self.fp is a file-like object.
 			
 		#(magic, version, libcount, symcount, extcount, zero, model) = struct.unpack(PyMDL.FORMAT, file.read(struct.calcsize(PyMDL.FORMAT)))
 
@@ -91,11 +89,20 @@ class PyMDL:
 		binary_surface_info['blueMask'] = reader.read_int('l')
 		binary_surface_info['alphaMask'] = reader.read_int('l')
 		binary_surface_info['bColorKey'] = reader.read_int('?xxx')
+		
+		self.size = binary_surface_info['x'], binary_surface_info['y']
+		self.mode = "F;16" #TODO: check if the image is actually a "16-bit little endian unsigned integer"
+		self.tile = [("raw", #use the raw decoder on the image
+		              (0,0)+self.size, #of self.size size
+		              reader.pos, #starting from this offset
+		              (self.mode, #in this mode
+		               0, #with 0 padding between lines
+		               1, #starting from the top (-1 to start from the bottom)
+		               ))]
 	
-		data = reader.read_bytes(binary_surface_info['x'] * binary_surface_info['y'] * binary_surface_info['bitCount']/8)
-
-		object_end = reader.read_int('l')
-		assert object_end == 0
+#		data = reader.read_bytes(binary_surface_info['x'] * binary_surface_info['y'] * binary_surface_info['bitCount']/8)
+#		object_end = reader.read_int('l')
+#		assert object_end == 0
 		
 		print filename, 'libcount: %i' % libcount
 		print filename, 'symcount: %i' % symcount
@@ -109,17 +116,19 @@ class PyMDL:
 		print filename, 'greenMask: %i' % binary_surface_info['greenMask']
 		print filename, 'blueMask: %i' % binary_surface_info['blueMask']
 		print filename, 'len(data): %i' % len(data)
-		
-		return NotImplemented
 
+#now register.
+Image.register_open("MDL", MDLImageFile)
+Image.register_extension("MDL", ".mdl")
+
+#http://code.activestate.com/recipes/180801/
 if(__name__ == "__main__"):
 	if len(sys.argv) < 2:
 		print "Syntax: pyMDL.py <file(s) to convert>"
 	else:
-		pyMDL = PyMDL()
 		for mdlFile in sys.argv[1:]:
 		  try:
-    		image = pyMDL.readImage(mdlFile)
-    		#TODO: convert image
+		    pngFile = os.path.splitext(mdlFile)[0] + ".png"
+    		Image.open(mdlFile).save(pngFile)
   		except Exception e:
         print mdlFile, e
