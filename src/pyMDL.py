@@ -2,7 +2,11 @@ import struct
 import Image
 import sys
 
+class NotMDLException(Exception):
+  pass
 
+class NotImplementedException(Exception):
+  pass
 
 class FileReader:
 	def __init__(self, filename):
@@ -39,22 +43,30 @@ class PyMDL:
 	
 	def __init__(self):
 		self.data = None
+		
+  def writeImage(self, image, filename):
+    return NotImplemented
 
-	def convertToPNG(self, filename):
+	def readImage(self, filename):
 		reader = FileReader(filename)
 			
 		#(magic, version, libcount, symcount, extcount, zero, model) = struct.unpack(PyMDL.FORMAT, file.read(struct.calcsize(PyMDL.FORMAT)))
 
 		magic = reader.read_int('l')
-		assert magic == -558178560
+		if not magic == -558178560:
+		  raise NotMDLException, "%s is not a valid compiled MDL file." % filename
 		version = reader.read_int('l')
-		assert version == 65536
-		libcount = reader.read_int('l')
+		if not version>>16 == 1:
+		  raise NotImplementedException, "%s is a version %d MDL file; this application only supports version 1." % (filename, version>>16)
+		  #bonus points: set version bytes to 70000 and send the output to 
+		libcount = rfilename, eader.read_int('l')
 		symcount = reader.read_int('l')
-		assert symcount == 1           # FIXME: more is valid, but currently just not supported
+		if not symcount == 1:           # FIXME: more is valid, but currently just not supported
+		  raise NotImplementedException, "%s file contains %d symbols. This tool only supports one symbol per file." % (filename, symcount)
 		extcount = reader.read_int('l')
 		zero = reader.read_int('l')
-		assert zero == 0
+		if not zero == 0:
+		  raise NotImplementedException, "%s is not a valid version 1 MDL file from FreeAllegiance." % filename
 		libs = reader.read_strings(libcount)
 		indexNameSpaceTable = reader.read_int('l')
 		symbols = reader.read_strings(symcount)
@@ -85,28 +97,29 @@ class PyMDL:
 		object_end = reader.read_int('l')
 		assert object_end == 0
 		
-		print 'libcount: %i' % libcount
-		print 'symcount: %i' % symcount
-		print 'extcount: %i' % extcount
-		print 'libs: %s' % ', '.join(libs)
-		print 'symbols: %s' % ', '.join(symbols)
-		print 'externals: %s' % ', '.join(externals)
-		print 'size: %ix%i' % (binary_surface_info['x'], binary_surface_info['y'])
-		print 'bitCount: %i' % binary_surface_info['bitCount']
-		print 'redMask: %i' % binary_surface_info['redMask']
-		print 'greenMask: %i' % binary_surface_info['greenMask']
-		print 'blueMask: %i' % binary_surface_info['blueMask']
-		print 'len(data): %i' % len(data)
+		print filename, 'libcount: %i' % libcount
+		print filename, 'symcount: %i' % symcount
+		print filename, 'extcount: %i' % extcount
+		print filename, 'libs: %s' % ', '.join(libs)
+		print filename, 'symbols: %s' % ', '.join(symbols)
+		print filename, 'externals: %s' % ', '.join(externals)
+		print filename, 'size: %ix%i' % (binary_surface_info['x'], binary_surface_info['y'])
+		print filename, 'bitCount: %i' % binary_surface_info['bitCount']
+		print filename, 'redMask: %i' % binary_surface_info['redMask']
+		print filename, 'greenMask: %i' % binary_surface_info['greenMask']
+		print filename, 'blueMask: %i' % binary_surface_info['blueMask']
+		print filename, 'len(data): %i' % len(data)
 		
-		
-
-
-
-
+		return NotImplemented
 
 if(__name__ == "__main__"):
 	if len(sys.argv) < 2:
-		print "Syntax: pyMDL.py <file to convert>"
+		print "Syntax: pyMDL.py <file(s) to convert>"
 	else:
 		pyMDL = PyMDL()
-		pyMDL.convertToPNG(sys.argv[1])
+		for mdlFile in sys.argv[1:]:
+		  try:
+    		image = pyMDL.readImage(mdlFile)
+    		#TODO: convert image
+  		except Exception e:
+        print mdlFile, e
